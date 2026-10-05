@@ -1,0 +1,15 @@
+node_modules/
+dist/
+release/
+logs/
+*.log
+.DS_Store
+hub.config.json
+hub-state.json
+MAINTENANCE.txt
+.claude/
+CLAUDE.local.md
+hub.pid
+# other teams' game pictures stay out of git (internal names; the repo may be public); bnb.png is ours
+assets/*
+!assets/bnb.png

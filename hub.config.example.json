@@ -1,0 +1,25 @@
+{
+  "port": 4300,
+  "title": "更萊姆遊戲",
+  "adminPassword": "",
+  "games": [
+    {
+      "id": "bnb",
+      "name": "水球大亂鬥",
+      "image": "bnb.png",
+      "desc": "爆爆王規則的 2–4 人對戰，可以加電腦玩家",
+      "dir": "../BnB",
+      "command": "node",
+      "args": ["dist/server/index.js"],
+      "port": 3000,
+      "health": "/healthz"
+    },
+    {
+      "id": "other",
+      "name": "另一個遊戲",
+      "desc": "沒有 command：主控制器只顯示它連不連得到，不幫它開關",
+      "port": 9001
+    }
+  ],
+  "links": []
+}

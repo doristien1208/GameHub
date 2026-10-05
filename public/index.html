@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>更萊姆遊戲</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  /* Monochrome cyberpunk: black, white and greys, plus one colour: the green light of a running game.
+     Other states are told apart by fill, outline, hazard stripes and motion; thumbnails stay grey until
+     a playable game is hovered. */
+  :root {
+    color-scheme: dark;
+    --bg: #050505;
+    --panel: rgba(10, 10, 10, 0.88);
+    --line: rgba(255, 255, 255, 0.14);
+    --line-2: rgba(255, 255, 255, 0.34);
+    --text: #f0f0f0;
+    --ink: #000000;
+    --muted: #a6a6a6;
+    --dim: #6e6e6e;
+    --ok: #22c55e;
+    --hazard: repeating-linear-gradient(-45deg, #f0f0f0 0 7px, #050505 7px 14px);
+    --hazard-s: repeating-linear-gradient(-45deg, #f0f0f0 0 3px, #050505 3px 6px);
+    --mono: "JetBrains Mono", "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", "PingFang TC", "Microsoft JhengHei", monospace;
+    --sans: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", "Segoe UI", system-ui, sans-serif;
+    --thumb: 200px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  html { background: var(--bg); }
+  body {
+    min-height: 100vh;
+    color: var(--text);
+    font: 15px/1.6 var(--sans);
+    background:
+      radial-gradient(1200px 520px at 50% -140px, rgba(255, 255, 255, 0.1), transparent 70%),
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px) 0 0 / 48px 48px,
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px) 0 0 / 48px 48px,
+      var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* CRT scanlines and a vignette over the page; they never take clicks */
+  body::before, body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 40; }
+  body::before { background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px); }
+  body::after { background: radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.45) 100%); }
+  ::selection { background: var(--text); color: var(--ink); }
+  :focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+  .wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  .grow { flex: 1; }
+
+  /* ---------------------------------------------------------------- header */
+  .top { position: relative; padding: 28px 0 6px; }
+  .top::after {
+    content: "HUB"; position: absolute; right: -6px; top: 34px; z-index: -1; pointer-events: none;
+    font: 900 170px/1 var(--mono); color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, 0.07);
+  }
+  .bar {
+    position: relative; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+    font: 12px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+  }
+  .bar::after { content: ""; position: absolute; left: 0; bottom: -1px; width: 96px; height: 1px; background: var(--text); }
+  .brand { padding: 4px 8px; background: var(--text); color: var(--ink); font-weight: 700; }
+  .node { color: var(--dim); }
+  .live { display: inline-flex; align-items: center; gap: 8px; }
+  .live i { width: 8px; height: 8px; background: var(--text); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12); animation: pulse 2s ease-in-out infinite; }
+  .live.down { color: var(--text); }
+  .live.down i { background: transparent; border: 1px solid var(--text); box-shadow: none; animation: blink 0.8s steps(1) infinite; }
+  h1 {
+    position: relative; display: inline-block; margin: 26px 0 8px;
+    font: 900 clamp(38px, 7vw, 76px)/1.08 var(--sans); letter-spacing: 0.08em;
+  }
+  .glitch::before, .glitch::after {
+    content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; pointer-events: none;
+    background: var(--bg); clip-path: inset(0 0 100% 0);
+  }
+  .glitch::before { text-shadow: -3px 0 #8c8c8c; animation: slice-a 7s infinite steps(1); }
+  .glitch::after { text-shadow: 3px 0 #474747; animation: slice-b 7s infinite steps(1); }
+  .summary { margin: 0; font: 13px/1.6 var(--mono); color: var(--muted); letter-spacing: 0.04em; }
+  .summary b { color: var(--text); }
+  .caret { display: inline-block; width: 8px; height: 14px; margin-left: 6px; vertical-align: -2px; background: var(--text); animation: blink 1s steps(1) infinite; }
+  .banner { display: none; position: relative; margin-top: 18px; padding: 16px 14px 10px; border: 1px solid var(--text); background: var(--ink); font-weight: 600; }
+  .banner.show { display: block; }
+  .banner::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--hazard); }
+  .banner b { margin-right: 10px; padding: 1px 6px; background: var(--text); color: var(--ink); font-family: var(--mono); letter-spacing: 0.1em; }
+
+  /* ---------------------------------------------------------------- sections */
+  .section {
+    display: flex; align-items: center; gap: 12px; margin: 34px 0 16px;
+    font: 600 12px/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+  }
+  .section .idx, .section .count { color: var(--text); }
+  .section .zh { font: 600 13px/1 var(--sans); letter-spacing: 0.1em; color: var(--text); }
+  .section .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-2), transparent); }
+  .empty { padding: 28px; text-align: center; color: var(--muted); border: 1px dashed var(--line-2); font-family: var(--mono); }
+
+  /* ---------------------------------------------------------------- game rows */
+  .list { display: grid; gap: 18px; }
+  .card {
+    position: relative; display: grid; gap: 0 22px; padding: 16px; min-width: 0;
+    grid-template-columns: var(--thumb) minmax(0, 1fr) 210px;
+    grid-template-areas: "thumb info side" "admin admin admin";
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 42%), var(--panel);
+    border: 1px solid var(--line);
+    transition: border-color 0.2s;
+  }
+  .card::before, .card::after { content: ""; position: absolute; width: 18px; height: 18px; pointer-events: none; transition: width 0.25s, height 0.25s; }
+  .card::before { top: -1px; left: -1px; border-top: 2px solid var(--text); border-left: 2px solid var(--text); }
+  .card::after { right: -1px; bottom: -1px; border-right: 2px solid var(--text); border-bottom: 2px solid var(--text); }
+  .card:hover { border-color: var(--line-2); }
+  .card:hover::before, .card:hover::after { width: 44px; height: 44px; }
+  body.boot .card { animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 90ms); }
+
+  .thumb {
+    grid-area: thumb; position: relative; display: block; align-self: start; width: var(--thumb); aspect-ratio: 1; overflow: hidden;
+    background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 10px), #0d0d0d;
+    border: 1px solid var(--line-2);
+  }
+  .thumb::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px); }
+  .media, .media img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .media img { display: block; object-fit: cover; filter: grayscale(1) contrast(1.12) brightness(0.92); transition: filter 0.4s, transform 0.6s; }
+  .mark { position: absolute; inset: 0; display: grid; place-items: center; font: 800 64px/1 var(--sans); color: rgba(255, 255, 255, 0.8); }
+  .card.playable:hover .media img, .card.playable:focus-within .media img { filter: none; transform: scale(1.04); }
+  .card.playable:hover .thumb::before {
+    content: ""; position: absolute; left: 0; right: 0; top: -40%; height: 40%; z-index: 3; pointer-events: none;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.22), transparent); animation: sweep 1.6s linear infinite;
+  }
+  .card:not(.playable) .media img { filter: grayscale(1) brightness(0.38) contrast(1.05); }
+  .no { position: absolute; top: 0; left: 0; z-index: 4; padding: 3px 6px; background: var(--text); color: var(--ink); font: 700 11px/1 var(--mono); letter-spacing: 0.1em; }
+  .lock {
+    position: absolute; left: 50%; bottom: 12px; z-index: 4; transform: translateX(-50%); padding: 6px 10px; white-space: nowrap;
+    background: var(--ink); border: 1px solid var(--line-2); font: 700 12px/1 var(--mono); letter-spacing: 0.16em; color: var(--text);
+  }
+  .lock.t-warn { border-color: var(--text); }
+  .lock.t-warn::before { content: ""; position: absolute; left: -1px; right: -1px; top: -8px; height: 6px; background: var(--hazard-s); }
+  .lock.t-bad { border-style: dashed; border-color: var(--text); animation: flicker 2.4s infinite; }
+  .lock.t-info::after { content: "_"; animation: blink 0.6s steps(1) infinite; }
+  .lock.t-quiet { color: var(--muted); }
+
+  .info { grid-area: info; display: flex; flex-direction: column; gap: 8px; min-width: 0; padding-top: 2px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 14px; font: 11px/1.4 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+  .card h3 { margin: 0; font: 800 26px/1.25 var(--sans); letter-spacing: 0.04em; overflow-wrap: anywhere; }
+  .desc { margin: 0; color: var(--muted); font-size: 14px; }
+  .notice { position: relative; padding: 14px 12px 9px; border: 1px solid var(--line-2); background: var(--ink); font-size: 14px; }
+  .notice::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: var(--hazard); }
+  .notice b { margin-right: 8px; padding: 3px 6px; background: var(--text); color: var(--ink); font: 700 11px/1 var(--mono); letter-spacing: 0.14em; vertical-align: 1px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 4px; }
+  .chips span { padding: 5px 8px; border: 1px solid var(--line-2); color: var(--muted); font: 12px/1 var(--mono); letter-spacing: 0.04em; }
+  .chips span.hot { background: var(--text); border-color: var(--text); color: var(--ink); font-weight: 700; }
+
+  .side { grid-area: side; display: flex; flex-direction: column; align-items: stretch; gap: 10px; min-width: 0; }
+  .pill {
+    align-self: flex-end; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 10px; white-space: nowrap;
+    border: 1px solid var(--line-2); color: var(--muted); font: 700 12px/1 var(--mono); letter-spacing: 0.08em;
+  }
+  .pill i { flex-shrink: 0; width: 7px; height: 7px; background: currentColor; }
+  .pill em { font: 600 12px/1 var(--sans); font-style: normal; letter-spacing: 0.04em; }
+  .t-good { background: var(--text); border-color: var(--text); color: var(--ink); }
+  .t-good i { background: var(--ok); box-shadow: 0 0 6px var(--ok); animation: pulse 1.8s ease-in-out infinite; }
+  .t-info { border-color: var(--text); color: var(--text); }
+  .t-info i { animation: blink 0.6s steps(1) infinite; }
+  .t-warn { border-color: var(--text); color: var(--text); }
+  .t-warn i { width: 12px; height: 12px; background: var(--hazard-s); }
+  .t-bad { border: 1px dashed var(--text); color: var(--text); animation: flicker 2.4s infinite; }
+  .t-quiet { border-color: var(--line); color: var(--dim); }
+  .t-quiet i { background: transparent; border: 1px solid currentColor; }
+  .why { min-height: 1.4em; text-align: right; color: var(--dim); font: 12px/1.4 var(--mono); letter-spacing: 0.04em; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px; border-radius: 0; cursor: pointer;
+    border: 1px solid var(--line-2); background: transparent; color: var(--text); text-decoration: none;
+    font: 600 13px/1.2 var(--mono); letter-spacing: 0.08em; transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn:hover:not([aria-disabled="true"]):not(:disabled) { background: var(--text); border-color: var(--text); color: var(--ink); }
+  .btn.primary {
+    justify-content: space-between; margin-top: auto; padding: 13px 16px; background: var(--text); border-color: var(--text); color: var(--ink);
+    font: 800 15px/1.2 var(--sans); letter-spacing: 0.14em;
+  }
+  .btn.primary .arrow { font-family: var(--mono); transition: transform 0.2s; }
+  .btn.primary:hover:not([aria-disabled="true"]):not(:disabled) { background: var(--ink); color: var(--text); }
+  .btn.primary:hover .arrow { transform: translateX(4px); }
+  .btn[aria-disabled="true"], .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+  .btn.primary[aria-disabled="true"] { opacity: 1; background: transparent; border: 1px dashed var(--line-2); color: var(--dim); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+
+  .admin { grid-area: admin; display: none; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line-2); }
+  body.is-admin .admin { display: flex; }
+  .admin::before { content: "ADMIN"; padding: 4px 6px; background: var(--text); color: var(--ink); font: 700 11px/1 var(--mono); letter-spacing: 0.18em; }
+  .admin .note { width: 100%; font-size: 12.5px; color: var(--dim); }
+
+  /* ---------------------------------------------------------------- links, footer */
+  .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+  .link {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 12px 14px; min-width: 0;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text); text-decoration: none; transition: background 0.15s, color 0.15s;
+  }
+  .link b { overflow-wrap: anywhere; }
+  .link span { grid-column: 1; color: var(--dim); font: 12px/1.4 var(--mono); overflow-wrap: anywhere; }
+  .link i { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--muted); font: 16px/1 var(--mono); font-style: normal; }
+  .link:hover { background: var(--text); color: var(--ink); }
+  .link:hover span, .link:hover i { color: var(--ink); }
+  footer {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 40px; padding: 18px 0 44px; border-top: 1px solid var(--line);
+    color: var(--dim); font: 12px/1.4 var(--mono); letter-spacing: 0.08em;
+  }
+  #admin-state { padding: 3px 6px; background: var(--text); color: var(--ink); font-weight: 700; }
+  #admin-state:empty { display: none; }
+
+  /* ---------------------------------------------------------------- dialogs, toast */
+  dialog {
+    width: min(440px, calc(100vw - 32px)); padding: 22px; border: 1px solid var(--line-2); border-radius: 0;
+    background: #070707; color: var(--text); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
+  }
+  dialog::before { content: ""; position: absolute; top: -1px; left: -1px; width: 64px; height: 2px; background: var(--text); }
+  dialog.wide { width: min(920px, calc(100vw - 32px)); }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
+  dialog h3 { margin: 0 0 14px; font: 700 13px/1.3 var(--mono); letter-spacing: 0.14em; }
+  dialog input {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line-2); border-radius: 0; background: var(--ink); color: var(--text);
+    font: 15px var(--mono); caret-color: var(--text);
+  }
+  dialog input:focus { outline: none; border-color: var(--text); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12); }
+  .row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .row .btn.primary { margin-top: 0; padding: 9px 14px; font-size: 14px; letter-spacing: 0.08em; }
+  .err { min-height: 1.3em; margin-top: 8px; color: var(--text); font: 12.5px/1.4 var(--mono); }
+  .err:not(:empty)::before { content: "ERR"; margin-right: 8px; padding: 0 4px; background: var(--text); color: var(--ink); font-weight: 700; }
+  pre.log {
+    margin: 0; max-height: min(60vh, 520px); overflow: auto; padding: 12px; border: 1px solid var(--line); background: var(--ink);
+    color: #d6d6d6; font: 12.5px/1.55 var(--mono); white-space: pre-wrap; word-break: break-all;
+  }
+  .log-hint { color: var(--dim); font: 12px/1.4 var(--mono); }
+  .toast {
+    position: fixed; left: 50%; bottom: 22px; z-index: 60; max-width: calc(100vw - 32px); padding: 10px 16px; pointer-events: none;
+    background: var(--text); color: var(--ink); font: 600 13px/1.4 var(--mono); letter-spacing: 0.04em;
+    opacity: 0; transform: translate(-50%, 8px); transition: opacity 0.2s, transform 0.2s;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @keyframes pulse { 50% { opacity: 0.35; } }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes flicker { 0%, 2%, 6%, 43%, 47%, 100% { opacity: 1; } 3%, 44% { opacity: 0.4; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+  @keyframes sweep { to { transform: translateY(350%); } }
+  @keyframes slice-a {
+    0%, 89%, 96%, 100% { clip-path: inset(0 0 100% 0); transform: none; }
+    90% { clip-path: inset(12% 0 58% 0); transform: translateX(-6px); }
+    92% { clip-path: inset(62% 0 8% 0); transform: translateX(5px); }
+    94% { clip-path: inset(38% 0 40% 0); transform: translateX(-3px); }
+  }
+  @keyframes slice-b {
+    0%, 90%, 97%, 100% { clip-path: inset(0 0 100% 0); transform: none; }
+    91% { clip-path: inset(70% 0 5% 0); transform: translateX(6px); }
+    93% { clip-path: inset(20% 0 55% 0); transform: translateX(-5px); }
+    95% { clip-path: inset(45% 0 30% 0); transform: translateX(3px); }
+  }
+
+  @media (max-width: 880px) {
+    :root { --thumb: 140px; }
+    .top::after { font-size: 120px; }
+    .card { grid-template-columns: var(--thumb) minmax(0, 1fr); grid-template-areas: "thumb info" "side side" "admin admin"; }
+    .side { flex-direction: row; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+    .pill { align-self: center; }
+    .btn.primary { flex: 1; min-width: 200px; margin-top: 0; }
+    .why { width: 100%; text-align: left; }
+  }
+  @media (max-width: 560px) {
+    :root { --thumb: 96px; }
+    .wrap { padding: 0 16px; }
+    .top::after { display: none; }
+    .card { gap: 0 14px; padding: 12px; }
+    .card h3 { font-size: 20px; }
+    .desc { font-size: 13px; }
+    .meta { gap: 10px; letter-spacing: 0.08em; }
+    .mark { font-size: 40px; }
+    .lock { bottom: 6px; padding: 4px 6px; font-size: 10px; letter-spacing: 0.06em; }
+    .btn.primary { min-width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body class="boot">
+<div class="wrap">
+  <header class="top">
+    <div class="bar">
+      <span class="brand">GAME//HUB</span>
+      <span class="node" id="node"></span>
+      <span class="grow"></span>
+      <span class="live" id="live"><i></i><span>LINKING…</span></span>
+    </div>
+    <h1 class="glitch" id="title" data-text="更萊姆遊戲">更萊姆遊戲</h1>
+    <p class="summary" id="summary">&gt; 讀取中<span class="caret"></span></p>
+  </header>
+  <div class="banner" id="banner" role="status"><b>LINK LOST</b>連不上主控制器，顯示的是最後一次的狀態</div>
+
+  <h2 class="section"><span class="idx">[01]</span><span>Games</span><span class="zh">遊戲</span><span class="rule"></span><span class="count" id="count">--</span></h2>
+  <div class="list" id="games"><div class="empty">載入中…</div></div>
+
+  <div id="links-box" hidden>
+    <h2 class="section"><span class="idx">[02]</span><span>Links</span><span class="zh">其他連結</span><span class="rule"></span></h2>
+    <div class="links" id="links"></div>
+  </div>
+
+  <footer>
+    <span id="hub-version"></span>
+    <span class="grow"></span>
+    <span id="admin-state"></span>
+    <button class="btn small" id="admin-btn" type="button">管理</button>
+  </footer>
+</div>
+
+<dialog id="login">
+  <form method="dialog" id="login-form">
+    <h3>&gt; 管理模式 // AUTH</h3>
+    <input id="password" type="password" autocomplete="current-password" placeholder="管理密碼">
+    <div class="err" id="login-err"></div>
+    <div class="row">
+      <button class="btn" value="cancel" type="button" id="login-cancel">取消</button>
+      <button class="btn primary" type="submit">進入管理模式</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="log" class="wide">
+  <h3 id="log-title">紀錄</h3>
+  <pre class="log" id="log-text"></pre>
+  <div class="row">
+    <span class="grow log-hint">最後 200 行，每 3 秒更新</span>
+    <button class="btn" type="button" id="log-close">關閉</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const KEY = 'hub.key';
+let key = sessionStorage.getItem(KEY) || '';
+let last = null;
+let timer = 0;
+let logTimer = 0;
+let logGame = null;
+
+// [label, tone, code]: the tone picks the black-and-white style, the code is the terminal-style tag
+const STATE = {
+  running: ['運行中', 'good', 'ONLINE'],
+  external: ['運行中', 'good', 'ONLINE'],
+  starting: ['啟動中…', 'info', 'BOOTING'],
+  unresponsive: ['沒有回應', 'warn', 'NO SIGNAL'],
+  stopping: ['關閉中…', 'quiet', 'SHUTDOWN'],
+  stopped: ['已關閉', 'quiet', 'STANDBY'],
+  crashed: ['當掉了', 'bad', 'CRASHED'],
+  draining: ['準備維護', 'warn', 'DRAINING'],
+  maintenance: ['維護中', 'warn', 'MAINTENANCE'],
+  offline: ['沒有開', 'quiet', 'OFFLINE'],
+};
+
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : String(v));
+  }
+  for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) e.append(c instanceof Node ? c : String(c));
+  return e;
+}
+
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { ...opts, headers: { 'x-hub-key': key, ...(opts.headers || {}) } });
+  const body = await res.json().catch(() => ({}));
+  if (res.status === 401) logout();
+  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  return body;
+}
+
+function gameUrl(g) {
+  return `${location.protocol}//${location.hostname}:${g.port}${g.path || '/'}`;
+}
+
+/** Shown when a game has no thumbnail (or it fails to load): its first character, or two letters. */
+function initials(name) {
+  const s = String(name).trim();
+  if (/^[\x00-\x7f]/.test(s)) return s.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?';
+  return Array.from(s)[0] || '?';
+}
+
+// The picture is reused when a card is rebuilt, so it never flickers or loads again on a status change.
+const medias = new Map();
+function media(g) {
+  const old = medias.get(g.id);
+  if (old && old.dataset.src === (g.image || '')) return old;
+  const box = el('div', { class: 'media' }, el('span', { class: 'mark' }, initials(g.name)));
+  box.dataset.src = g.image || '';
+  if (g.image) {
+    const img = el('img', { src: g.image, alt: '', decoding: 'async', draggable: 'false' });
+    img.addEventListener('error', () => img.remove());
+    box.append(img);
+  }
+  medias.set(g.id, box);
+  return box;
+}
+
+function card(g, k) {
+  const [label, tone, code] = STATE[g.state] || [g.state, 'quiet', String(g.state).toUpperCase()];
+  const playable = (g.state === 'running' || g.state === 'external') && g.message === null;
+  let why = '';
+  if (!playable) {
+    if (g.message !== null) why = '維護中，暫時不能進入';
+    else if (g.state === 'starting') why = '馬上就好';
+    else if (g.state === 'crashed') why = g.restartIn !== null ? `${g.restartIn} 秒後自動重開` : '主控制器正在重開';
+    else if (g.state === 'stopped' || g.state === 'offline') why = '目前沒有開';
+    else why = '請稍候';
+  }
+  const chips = [];
+  if (g.online !== null) chips.push(el('span', { class: g.online ? 'hot' : null }, `在線 ${g.online} 人`));
+  if (g.playing) chips.push(el('span', { class: 'hot' }, `${g.playing} 間對戰中`));
+  if (g.version) chips.push(el('span', null, `v${g.version}`));
+
+  const admin = el('div', { class: 'admin' });
+  if (g.managed) {
+    const act = (action, text, opts = {}) =>
+      el('button', {
+        class: 'btn small', type: 'button', disabled: opts.disabled,
+        onclick: async () => {
+          if (opts.confirm && !confirm(opts.confirm)) return;
+          try {
+            await api(`/api/games/${g.id}/${action}`, { method: 'POST' });
+            toast(`${g.name}：已送出「${text}」`);
+            refresh(400);
+          } catch (e) {
+            toast(e.message);
+          }
+        },
+      }, text);
+    const on = ['running', 'starting', 'unresponsive', 'draining', 'crashed'].includes(g.state);
+    admin.append(
+      act('start', '啟動', { disabled: on || g.state === 'external' || g.message !== null }),
+      act('stop', '停止', { disabled: !on, confirm: g.online ? `${g.name} 現在有 ${g.online} 人在線，確定要停止？` : null }),
+      act('restart', '重啟', { disabled: !on || g.message !== null, confirm: g.online ? `${g.name} 現在有 ${g.online} 人在線，確定要重啟？` : null }),
+    );
+    if (g.state === 'external') {
+      admin.append(act('takeover', '接管', { confirm: `會結束占用埠 ${g.port} 的程式（例如手動開的視窗），改由主控制器啟動。確定？` }));
+    }
+    admin.append(el('button', { class: 'btn small', type: 'button', onclick: () => openLog(g) }, '紀錄'));
+    const notes = [];
+    if (g.state === 'external') notes.push('這個埠被不是主控制器開的程式占用（可能是手動開的視窗）；按「接管」改由主控制器管理。');
+    if (g.restarts) notes.push(`主控制器啟動後重開過 ${g.restarts} 次。`);
+    notes.push('維護：在遊戲資料夾放 maintenance.txt（內容會顯示在入口），刪掉就重新開啟。');
+    admin.append(el('div', { class: 'note' }, notes.join(' ')));
+  } else {
+    admin.append(el('div', { class: 'note' }, '只顯示連線狀態，不由主控制器開關。維護：在遊戲資料夾放 maintenance.txt。'));
+  }
+
+  const url = playable ? gameUrl(g) : null;
+  return el('article', { class: `card${playable ? ' playable' : ''}`, style: `--i:${k}` },
+    // the picture is a second way in, left out of the tab order (the button is the way in for keyboards)
+    el(url ? 'a' : 'div', { class: 'thumb', href: url, tabindex: url ? '-1' : null, 'aria-hidden': 'true' },
+      media(g),
+      el('span', { class: 'no' }, String(k + 1).padStart(2, '0')),
+      playable ? null : el('span', { class: `lock t-${tone}` }, code)),
+    el('div', { class: 'info' },
+      el('div', { class: 'meta' }, el('span', null, `ID://${g.id}`), el('span', null, `PORT ${g.port}`)),
+      el('h3', null, g.name),
+      g.desc ? el('p', { class: 'desc' }, g.desc) : null,
+      g.message !== null ? el('div', { class: 'notice' }, el('b', null, g.state === 'draining' ? '準備維護' : '維護公告'),
+        g.state === 'draining' ? `${g.message}（等目前這局結束）` : g.message) : null,
+      chips.length ? el('div', { class: 'chips' }, chips) : null),
+    el('div', { class: 'side' },
+      el('span', { class: `pill t-${tone}` }, el('i'), el('span', null, code), el('em', null, label)),
+      el('a', { class: 'btn primary', href: url, 'aria-disabled': playable ? null : 'true' },
+        el('span', null, '進入遊戲'), el('span', { class: 'arrow', 'aria-hidden': 'true' }, playable ? '→' : '×')),
+      el('div', { class: 'why' }, why)),
+    admin);
+}
+
+// Cards are only rebuilt when what they show changed, so a button is never swapped out mid-click
+// (and a hovered card keeps its colour).
+const cards = new Map();
+
+function render(s) {
+  document.title = s.title;
+  $('title').textContent = s.title;
+  $('title').dataset.text = s.title;
+  $('hub-version').textContent = `HUB v${s.version}`;
+  const up = s.games.filter((g) => g.state === 'running' || g.state === 'external').length;
+  const people = s.games.reduce((n, g) => n + (g.online || 0), 0);
+  $('summary').replaceChildren('> ', el('b', null, s.games.length), ' 款遊戲 · ', el('b', null, up), ' 款運行中 · ',
+    el('b', null, people), ' 人在線', el('span', { class: 'caret' }));
+  $('count').textContent = String(s.games.length).padStart(2, '0');
+  const games = $('games');
+  if (!s.games.length) {
+    cards.clear();
+    games.replaceChildren(el('div', { class: 'empty' }, '還沒有設定任何遊戲（hub.config.json）'));
+  } else {
+    const admin = document.body.classList.contains('is-admin');
+    const next = s.games.map((g, k) => {
+      const key = JSON.stringify([g, k, admin]);
+      const old = cards.get(g.id);
+      if (old && old.key === key) return old;
+      const fresh = { key, node: card(g, k) };
+      if (old) old.node.replaceWith(fresh.node);
+      return fresh;
+    });
+    const nodes = next.map((c) => c.node);
+    const same = games.children.length === nodes.length && nodes.every((n, k) => games.children[k] === n);
+    if (!same) games.replaceChildren(...nodes);
+    cards.clear();
+    s.games.forEach((g, k) => cards.set(g.id, next[k]));
+  }
+  $('links-box').hidden = !s.links.length;
+  $('links').replaceChildren(...s.links.map((l) => {
+    let host = l.url;
+    try { host = new URL(l.url, location.href).host; } catch {}
+    return el('a', { class: 'link', href: l.url, target: '_blank', rel: 'noopener' },
+      el('b', null, l.name), el('span', null, l.desc || host), el('i', { 'aria-hidden': 'true' }, '↗'));
+  }));
+}
+
+async function refresh(delay = 0) {
+  clearTimeout(timer);
+  if (delay) await new Promise((r) => setTimeout(r, delay));
+  try {
+    const res = await fetch('/api/status', { cache: 'no-store' });
+    if (!res.ok) throw new Error();
+    const first = !last;
+    last = await res.json();
+    render(last);
+    if (first) setTimeout(() => document.body.classList.remove('boot'), 1600);
+    $('banner').classList.remove('show');
+    $('live').classList.remove('down');
+    $('live').lastChild.textContent = `SYNC ${new Date().toLocaleTimeString('zh-TW', { hour12: false })}`;
+  } catch {
+    $('banner').classList.add('show');
+    $('live').classList.add('down');
+    $('live').lastChild.textContent = 'LINK LOST';
+  }
+  const busy = last && last.games.some((g) => ['starting', 'stopping', 'crashed'].includes(g.state));
+  timer = setTimeout(refresh, busy ? 1500 : 5000);
+}
+
+function setAdmin(on) {
+  document.body.classList.toggle('is-admin', on);
+  $('admin-btn').textContent = on ? '登出管理' : '管理';
+  $('admin-state').textContent = on ? 'ADMIN MODE' : '';
+  if (last) render(last);
+}
+
+function logout() {
+  key = '';
+  sessionStorage.removeItem(KEY);
+  setAdmin(false);
+}
+
+$('node').textContent = `NODE://${location.host}`;
+$('admin-btn').addEventListener('click', () => {
+  if (key) {
+    logout();
+    return;
+  }
+  $('login-err').textContent = '';
+  $('password').value = '';
+  $('login').showModal();
+  $('password').focus();
+});
+$('login-cancel').addEventListener('click', () => $('login').close());
+$('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  key = $('password').value;
+  try {
+    await api('/api/login', { method: 'POST' });
+    sessionStorage.setItem(KEY, key);
+    setAdmin(true);
+    $('login').close();
+  } catch (err) {
+    key = '';
+    $('login-err').textContent = err.message;
+  }
+});
+
+async function loadLog() {
+  if (!logGame) return;
+  try {
+    const { lines } = await api(`/api/games/${logGame.id}/log`);
+    const box = $('log-text');
+    const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 8;
+    box.textContent = lines.length ? lines.join('\n') : '（還沒有紀錄）';
+    if (atEnd) box.scrollTop = box.scrollHeight;
+  } catch (e) {
+    $('log-text').textContent = e.message;
+  }
+}
+
+function openLog(g) {
+  logGame = g;
+  $('log-title').textContent = `> ${g.name} // LOG`;
+  $('log-text').textContent = '載入中…';
+  $('log').showModal();
+  loadLog().then(() => ($('log-text').scrollTop = $('log-text').scrollHeight));
+  clearInterval(logTimer);
+  logTimer = setInterval(loadLog, 3000);
+}
+$('log-close').addEventListener('click', () => $('log').close());
+$('log').addEventListener('close', () => {
+  clearInterval(logTimer);
+  logGame = null;
+});
+
+if (key) {
+  api('/api/login', { method: 'POST' }).then(() => setAdmin(true)).catch(() => logout());
+}
+refresh();
+</script>
+</body>
+</html>
