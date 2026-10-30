@@ -48,6 +48,8 @@ export interface PromoConfig {
   finePrint: string;
   /** chance (0–1) that 進入遊戲 first plays the ad; Ultimate members never see it */
   preroll: number;
+  /** seconds without a mouse move or key press before closed ads come back (trailers too); 0 = never */
+  idle: number;
 }
 
 export const DEFAULT_PROMO: PromoConfig = {
@@ -56,6 +58,7 @@ export const DEFAULT_PROMO: PromoConfig = {
   perks: ['電腦玩家看到你會手下留情（不會）', 'Boss 狂暴時間 +0 秒', '雲端存檔：存在你的記憶裡', '優先排隊（反正沒人排）'],
   finePrint: '* YBOX Game Pass 並不存在。訂閱即表示您同意午休多玩一場。',
   preroll: 0.1,
+  idle: 60,
 };
 
 export interface HubConfig {
@@ -174,12 +177,16 @@ function validatePromo(raw: unknown, fail: (msg: string) => never): PromoConfig 
   if (x.preroll !== undefined && !(typeof x.preroll === 'number' && x.preroll >= 0 && x.preroll <= 1)) {
     fail('promo.preroll 必須是 0 到 1 之間的數字（例如 0.1 = 十次出現一次）');
   }
+  if (x.idle !== undefined && !(typeof x.idle === 'number' && x.idle >= 0)) {
+    fail('promo.idle 必須是 0 以上的秒數（0 = 關掉的廣告不會自己回來）');
+  }
   return {
     enabled: x.enabled !== false,
     slogans: lines('slogans'),
     perks: lines('perks'),
     finePrint: (x.finePrint as string | undefined) ?? DEFAULT_PROMO.finePrint,
     preroll: (x.preroll as number | undefined) ?? DEFAULT_PROMO.preroll,
+    idle: (x.idle as number | undefined) ?? DEFAULT_PROMO.idle,
   };
 }
 

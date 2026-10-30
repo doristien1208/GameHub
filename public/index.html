@@ -940,36 +940,40 @@ yb.addEventListener('close', () => {
 });
 $('sub-badge').addEventListener('click', manage);
 
-// One ad on screen at a time: the pop-up waits for a trailer, a dialog or the pre-roll to finish.
-const adOnScreen = () => yb.open || $('pv').open || !$('preroll').hidden;
+// One ad on screen at a time: the pop-up waits for a trailer, any dialog or the pre-roll to finish.
+const adOnScreen = () => !!document.querySelector('dialog[open]') || !$('preroll').hidden;
 
 function maybePop() {
   if (maybePop.done || !promo) return;
   maybePop.done = true;
-  setTimeout(function show() {
-    if (!promo || myPlan()) return;
-    if (adOnScreen()) return setTimeout(show, 4000);
-    const pop = $('ybox-pop');
-    const again = store.get('ybox.popOff') === today();
-    const off = () => {
-      store.set('ybox.popOff', today());
-      hidePop();
-    };
-    pop.replaceChildren(
-      logo(),
-      el('p', null, el('small', null, again ? 'YBOX GAME PASS · 再次提醒' : 'YBOX GAME PASS'), '您的 YBOX Game Pass 試用將於 0 天後到期'),
-      el('div', { class: 'row' },
-        el('button', { class: 'btn', type: 'button', onclick: off }, '下次再說'),
-        el('button', {
-          class: 'btn primary', type: 'button',
-          onclick: () => {
-            off();
-            buy(PLANS[2]);
-          },
-        }, '立即續訂')));
-    pop.hidden = false;
-    requestAnimationFrame(() => requestAnimationFrame(() => pop.classList.add('show')));
+  setTimeout(function wait() {
+    if (adOnScreen()) return setTimeout(wait, 4000);
+    showPop();
   }, 7000);
+}
+
+function showPop() {
+  if (!promo || myPlan()) return;
+  const pop = $('ybox-pop');
+  const again = store.get('ybox.popOff') === today();
+  const off = () => {
+    store.set('ybox.popOff', today());
+    hidePop();
+  };
+  pop.replaceChildren(
+    logo(),
+    el('p', null, el('small', null, again ? 'YBOX GAME PASS · 再次提醒' : 'YBOX GAME PASS'), '您的 YBOX Game Pass 試用將於 0 天後到期'),
+    el('div', { class: 'row' },
+      el('button', { class: 'btn', type: 'button', onclick: off }, '下次再說'),
+      el('button', {
+        class: 'btn primary', type: 'button',
+        onclick: () => {
+          off();
+          buy(PLANS[2]);
+        },
+      }, '立即續訂')));
+  pop.hidden = false;
+  requestAnimationFrame(() => requestAnimationFrame(() => pop.classList.add('show')));
 }
 function hidePop() {
   const pop = $('ybox-pop');
@@ -1057,14 +1061,39 @@ setInterval(() => {
 function maybeTrailer(s) {
   if (maybeTrailer.done || !s.ads || !s.ads.length) return;
   maybeTrailer.done = true;
-  const others = s.ads.filter((a) => a.file !== store.get('pv.last'));
-  const pool = others.length ? others : s.ads;
-  const ad = pool[Math.floor(Math.random() * pool.length)];
   setTimeout(function show() {
     if (adOnScreen()) return setTimeout(show, 3000);
-    trailer(ad);
+    if (last && last.ads && last.ads.length) trailer(pickTrailer(last.ads));
   }, 2500);
 }
+
+function pickTrailer(ads) {
+  const others = ads.filter((a) => a.file !== store.get('pv.last'));
+  const pool = others.length ? others : ads;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// "Not today" really means "until you look away": after promo.idle seconds with no mouse or key, a closed
+// banner comes back and a trailer or the YBOX pop-up opens, taking turns, one at a time.
+let lastInput = Date.now();
+let idleTurn = 0;
+for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) {
+  window.addEventListener(ev, () => (lastInput = Date.now()), { capture: true, passive: true });
+}
+setInterval(() => {
+  const idle = last && last.promo && typeof last.promo.idle === 'number' ? last.promo.idle : 60;
+  if (!last || !idle || Date.now() - lastInput < idle * 1000) return;
+  lastInput = Date.now(); // the next return takes another idle spell
+  if (bannerClosed) {
+    bannerClosed = false;
+    renderPromo(last);
+  }
+  if (adOnScreen() || !$('ybox-pop').hidden) return;
+  const ads = last.ads || [];
+  const popUp = promo && !myPlan();
+  if (ads.length && (!popUp || idleTurn++ % 2 === 0)) trailer(pickTrailer(ads));
+  else if (popUp) showPop();
+}, 1000);
 
 function trailer(ad) {
   const d = $('pv');

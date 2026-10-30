@@ -115,9 +115,10 @@ describe('portal server', () => {
   it('sends the YBOX Game Pass copy, built in unless the config changes it', async () => {
     const status = (await (await fetch(`${url}/api/status`)).json()) as HubStatus;
     expect(status.promo).toEqual(DEFAULT_PROMO);
-    const own = validateConfig({ adminPassword: 'abcd', games: [], promo: { enabled: false, preroll: 0.5 } }).promo;
-    expect(own).toEqual({ ...DEFAULT_PROMO, enabled: false, preroll: 0.5 });
-    for (const promo of [{ preroll: 2 }, { slogans: [] }, { perks: ['ok', 3] }, { enabled: 'yes' }, 'on']) {
+    expect(status.promo.idle).toBe(60); // closed ads come back after a minute with no mouse or key
+    const own = validateConfig({ adminPassword: 'abcd', games: [], promo: { enabled: false, preroll: 0.5, idle: 0 } }).promo;
+    expect(own).toEqual({ ...DEFAULT_PROMO, enabled: false, preroll: 0.5, idle: 0 });
+    for (const promo of [{ preroll: 2 }, { idle: -5 }, { idle: '60' }, { slogans: [] }, { perks: ['ok', 3] }, { enabled: 'yes' }, 'on']) {
       expect(() => validateConfig({ adminPassword: 'abcd', games: [], promo }), JSON.stringify(promo)).toThrow(/promo/);
     }
   });
