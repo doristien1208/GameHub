@@ -35,6 +35,29 @@ export interface LinkConfig {
   desc?: string;
 }
 
+/**
+ * YBOX Game Pass: a parody subscription the portal advertises (a banner over the list, a pop-up, and now and
+ * then an ad before a game opens). Nothing is sold or collected: "subscribing" only puts a badge in that browser.
+ */
+export interface PromoConfig {
+  enabled: boolean;
+  /** banner lines, shown in turn; {games} becomes the number of games */
+  slogans: string[];
+  /** member perks in the plans dialog: Core gets the first, Standard the first two, Ultimate all of them */
+  perks: string[];
+  finePrint: string;
+  /** chance (0–1) that 進入遊戲 first plays the ad; Ultimate members never see it */
+  preroll: number;
+}
+
+export const DEFAULT_PROMO: PromoConfig = {
+  enabled: true,
+  slogans: ['一個月 NT$0，玩到忘記下班', '所有遊戲本來就免費，現在更免費了', '收錄 {games} 款遊戲，每週不一定新增'],
+  perks: ['電腦玩家看到你會手下留情（不會）', 'Boss 狂暴時間 +0 秒', '雲端存檔：存在你的記憶裡', '優先排隊（反正沒人排）'],
+  finePrint: '* YBOX Game Pass 並不存在。訂閱即表示您同意午休多玩一場。',
+  preroll: 0.1,
+};
+
 export interface HubConfig {
   port: number;
   title: string;
@@ -42,12 +65,16 @@ export interface HubConfig {
   adminPassword: string;
   games: GameConfig[];
   links: LinkConfig[];
+  promo: PromoConfig;
 }
 
 const ID = /^[A-Za-z0-9_-]{1,32}$/;
 
 /** Folder next to dist/ with the games' thumbnails, served at /assets/<file>. */
 export const ASSETS_DIR = 'assets';
+/** Game trailers inside the assets folder, served at /assets/pv/<file>: the portal pops them up as ads. */
+export const PV_DIR = 'pv';
+export const VIDEO_TYPES: Record<string, string> = { '.mp4': 'video/mp4', '.webm': 'video/webm' };
 /** A file name in the assets folder: no folders, no leading dot. */
 export const ASSET_NAME = /^\w[\w.-]*$/;
 export const IMAGE_TYPES: Record<string, string> = {
@@ -127,6 +154,32 @@ export function validateConfig(raw: unknown): HubConfig {
     adminPassword: c.adminPassword as string,
     games,
     links,
+    promo: validatePromo(c.promo, fail),
+  };
+}
+
+/** The optional `promo` block: every field may be left out (the built-in copy is used). */
+function validatePromo(raw: unknown, fail: (msg: string) => never): PromoConfig {
+  if (raw === undefined) return DEFAULT_PROMO;
+  if (!raw || typeof raw !== 'object') fail('promo 必須是物件');
+  const x = raw as Record<string, unknown>;
+  const lines = (k: 'slogans' | 'perks'): string[] => {
+    const v = x[k];
+    if (v === undefined) return DEFAULT_PROMO[k];
+    if (!Array.isArray(v) || !v.length || !v.every((s) => typeof s === 'string' && s)) fail(`promo.${k} 必須是至少一句的字串陣列`);
+    return v as string[];
+  };
+  if (x.enabled !== undefined && typeof x.enabled !== 'boolean') fail('promo.enabled 只能是 true 或 false');
+  if (x.finePrint !== undefined && typeof x.finePrint !== 'string') fail('promo.finePrint 必須是字串');
+  if (x.preroll !== undefined && !(typeof x.preroll === 'number' && x.preroll >= 0 && x.preroll <= 1)) {
+    fail('promo.preroll 必須是 0 到 1 之間的數字（例如 0.1 = 十次出現一次）');
+  }
+  return {
+    enabled: x.enabled !== false,
+    slogans: lines('slogans'),
+    perks: lines('perks'),
+    finePrint: (x.finePrint as string | undefined) ?? DEFAULT_PROMO.finePrint,
+    preroll: (x.preroll as number | undefined) ?? DEFAULT_PROMO.preroll,
   };
 }
 

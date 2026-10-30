@@ -4,6 +4,7 @@ rem ==========================================================================
 rem  Stops the Game Hub and removes its start-with-Windows task.
 rem  The games keep running; stop them on the admin page first if needed.
 rem  Right-click this file and choose "Run as administrator".
+rem  The work is done by autostart.ps1.
 rem ==========================================================================
 set "TASK=Game Hub"
 
@@ -12,13 +13,14 @@ fltmc >nul 2>&1 && goto admin_ok
 goto not_admin
 
 :admin_ok
-pushd "%~dp0"
-schtasks /end /tn "%TASK%" >nul 2>&1
-set "HUBPID="
-if exist "hub.pid" set /p HUBPID=<hub.pid
-if defined HUBPID taskkill /pid %HUBPID% /f >nul 2>&1
-schtasks /query /tn "%TASK%" >nul 2>&1 || goto not_installed
-schtasks /delete /tn "%TASK%" /f >nul || goto failed
+if not exist "%~dp0autostart.ps1" goto no_script
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0autostart.ps1" -Remove
+set "RESULT=%ERRORLEVEL%"
+if "%RESULT%"=="0" goto removed
+if "%RESULT%"=="5" goto not_installed
+goto failed
+
+:removed
 echo Done. The Game Hub is stopped and no longer starts with Windows.
 goto end
 
@@ -31,11 +33,14 @@ echo [ERROR] Not running as administrator.
 echo         Right-click remove-autostart.bat and choose "Run as administrator".
 goto end
 
+:no_script
+echo [ERROR] autostart.ps1 was not found. Keep it next to this file.
+goto end
+
 :failed
-echo [ERROR] Could not remove the scheduled task "%TASK%".
+echo [ERROR] Could not remove the scheduled task "%TASK%". See the message above.
 
 :end
-popd
 echo.
 pause
 endlocal

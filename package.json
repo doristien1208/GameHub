@@ -1,11 +1,11 @@
 {
   "name": "game-hub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "測試機遊戲入口與主控制器：入口網頁、遊戲狀態、啟動／停止／重啟、當掉自動重啟、維護模式",
   "type": "module",
   "engines": {
-    "node": ">=22.18.0 <23"
+    "node": ">=24 <25"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^22.20.4",
+    "@types/node": "^24.19.2",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "~5.9.3",

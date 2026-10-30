@@ -4,20 +4,21 @@
 這個資料夾是「更萊姆遊戲」入口網站：同事只要開一個網址，就能看到所有遊戲的狀態並進入遊戲。
 主控制器也負責把遊戲開起來、當掉時重開、維護時關掉。不需要 npm install，也不需要 nginx。
 
-  dist\                    主控制器本體與入口網頁
+  dist\                    主控制器本體（hub.js）、讓它一直開著的背景服務（service.js）與入口網頁
   assets\                  遊戲列表的縮圖（200x200），檔名寫在 hub.config.json 的 "image"
   hub.config.json          實際設定（第一次啟動時自動建立；之後更新版本不會被覆蓋）
   hub.config.example.json  設定範例
   start-hub.bat            啟動主控制器（雙擊，會開一個視窗）
-  install-autostart.bat    設成開機自動啟動（系統管理員執行一次）
+  install-autostart.bat    設成開機自動啟動（系統管理員執行；再執行一次就是換上新設定）
   remove-autostart.bat     停止主控制器並取消開機自動啟動
+  autostart.ps1            上面兩個檔案實際執行的設定程式，放在同一個資料夾即可
   open-firewall.bat        開放防火牆（系統管理員執行一次）
   logs\                    hub.log（主控制器）、<遊戲 id>.log（各遊戲的輸出）、launcher.log
 
 
 一、需求
 --------
-- Windows，已安裝 Node.js 22.18.0
+- Windows，已安裝 Node.js 24（命令提示字元輸入 node -v，應顯示 v24 開頭的版本）
 - 這個資料夾跟各遊戲的資料夾放在同一層，例如：
     D:\games\GameHub
     D:\games\BnB
@@ -33,10 +34,13 @@
 2. 在 open-firewall.bat 上按右鍵，選「以系統管理員身分執行」（開放 TCP 4300）。
 3. 如果有開著的主控制器視窗（雙擊 start-hub.bat 開的），先關掉；遊戲會繼續跑。
    在 install-autostart.bat 上按右鍵，選「以系統管理員身分執行」。
-   它會建立排程工作「Game Hub」：用執行這個檔案的帳號在背景執行（不存密碼、沒有視窗、
-   開機後不用登入就會啟動），並等幾秒確認主控制器真的跑起來，才顯示 Done 與
-   「Task runs as <帳號>, state Running」。這個帳號要能讀寫 GameHub 與各遊戲的資料夾。
-   之後每次開機都會自動啟動。只想先試試看：直接雙擊 start-hub.bat。
+   它會建立排程工作「Game Hub」：用執行這個檔案的帳號在背景執行 node dist\service.js
+   （不存密碼、沒有視窗、開機後不用登入就會啟動），並等主控制器在埠上回應，才顯示 Done 與
+   「Task runs ... state Running, hub answers on port 4300: True」。這個帳號要能讀寫 GameHub
+   與各遊戲的資料夾。之後每次開機都會自動啟動。
+   背景服務會讓主控制器一直開著：主控制器停了（改設定、當掉、更新 Node.js 時被中斷）5 秒內就重開；
+   排程另外每 5 分鐘檢查一次，萬一服務本身被關掉也會自己回來。
+   只想先試試看：直接雙擊 start-hub.bat。
 4. 瀏覽器開 http://<這台電腦的 IP>:4300 ，看到遊戲列表就完成了。
 5. 管理密碼在 hub.config.json 的 adminPassword（第一次啟動時自動產生，可以自己改）。
 
@@ -85,12 +89,33 @@
 - "title"：網站名稱（預設「更萊姆遊戲」），顯示在頁面最上面與瀏覽器分頁。
 - "links"：入口下方「其他連結」，每個是 {"name": "...", "url": "...", "desc": "..."}。
 - "port"：入口的埠（預設 4300）；改了要再執行一次 open-firewall.bat 新的埠。
+- "promo"：（選填）入口的惡搞訂閱廣告「YBOX Game Pass」：遊戲列表上方的橫幅、右下角的「試用到期」
+  小視窗，以及按「進入遊戲」時偶爾先播的片頭廣告（10 分鐘內最多一次；訂閱 Ultimate 的人看不到）。
+  不寫就用內建文案。「訂閱」只是在那台電腦的瀏覽器記住方案、顯示徽章，不收任何資料。
+  橫幅的 × 與小視窗的「下次再說」也是故意做的假按鈕：只關到下次開入口，回來時還會註明您選過。可改的欄位：
+    "promo": {
+      "enabled": true,                         false = 全部不顯示
+      "slogans": ["一個月 NT$0，玩到忘記下班"],  橫幅輪播的標語；{games} 會換成遊戲數
+      "perks": ["Boss 狂暴時間 +0 秒"],          方案比較裡的會員福利
+      "finePrint": "* YBOX Game Pass 並不存在。",  橫幅下方的小字
+      "preroll": 0.1                           按「進入遊戲」時先播片頭廣告的機率（0–1）
+    }
+
+遊戲宣傳影片（彈跳視窗廣告）：
+- 把影片（mp4 或 webm，英數字檔名）放進 assets\pv 資料夾，檔名用遊戲的 id 開頭（不分大小寫，- 和 _ 視為相同），
+  例如 bnb-pv.mp4 會對應到 id 為 bnb 的遊戲、Space_Race_PV.mp4 對應到 space-race。不用改設定，入口自動會用。
+- 同事開入口時，影片會以彈跳視窗靜音播放（瀏覽器不允許自動播放聲音，可按「開啟聲音」），
+  遊戲開著時有「進入遊戲」按鈕，維護中則顯示「維護中，敬請期待」。
+  「今天不再顯示」是故意做的假按鈕：按了只會關掉視窗，下次開入口照樣跳出（還會註明「您今天已選擇不再顯示」）。
+- 有多支影片時每次開入口隨機挑一支，但不會連續兩次播同一支，每款遊戲都輪得到。
+  不想再播就把影片移出 assets\pv。
+- 影片建議用 H.264（mp4），Chrome 與 Edge 都能直接播放。
 
 
 六、更新主控制器本身
 --------------------
-把新版的 dist 資料夾整個覆蓋舊的，再執行 remove-autostart.bat 與 install-autostart.bat
-（或在「工作排程器」裡把 Game Hub 結束後再執行）。遊戲不受影響。
+把新版的檔案（dist 資料夾、bat 與 autostart.ps1）整個覆蓋舊的，再用系統管理員身分執行一次
+install-autostart.bat：它會停掉舊的主控制器、換上新的排程設定並重新啟動。遊戲不受影響。
 
 
 七、問題排除
@@ -98,7 +123,13 @@
 - 入口打不開：先在這台電腦開 http://localhost:4300 。本機可以、別台不行，通常是防火牆，
   請用系統管理員身分執行 open-firewall.bat。
 - 看 logs\hub.log 與 logs\launcher.log；遊戲自己的輸出在 logs\<遊戲 id>.log
-  （管理模式按「紀錄」也看得到）。
+  （管理模式按「紀錄」也看得到）。launcher.log 裡 [service] 開頭的是背景服務：每次重開主控制器、
+  每次被中斷都會記一行。
+- 入口打不開，但排程顯示「執行中」：用系統管理員開命令提示字元，執行
+    schtasks /end /tn "Game Hub"
+    schtasks /run /tn "Game Hub"
+  遊戲不受影響。舊版的排程（執行 start-hub.bat service）在 Node.js 更新後會這樣卡住，
+  執行一次新版的 install-autostart.bat 就不會再發生。
 - 遊戲一直顯示「當掉了」：看那個遊戲的紀錄；常見原因是 dir 或 command 寫錯、埠被別的程式占用。
 - 入口顯示「運行中」，但管理模式只能按「接管」：那個埠被手動開的視窗占用，按「接管」即可。
 - 開機後主控制器沒起來：用系統管理員開命令提示字元，執行

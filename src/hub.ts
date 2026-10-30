@@ -1,10 +1,26 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ASSETS_DIR, type HubConfig, type LinkConfig } from './config';
+import {
+  ASSET_NAME,
+  ASSETS_DIR,
+  PV_DIR,
+  VIDEO_TYPES,
+  type HubConfig,
+  type LinkConfig,
+  type PromoConfig,
+} from './config';
 import { DEFAULT_TIMING, Game, type GameStatus, type Timing } from './game';
 import type { Logger } from './log';
 
-export const HUB_VERSION = '0.1.0';
+export const HUB_VERSION = '0.2.0';
+
+/** A trailer in assets/pv, matched to the game whose id starts its file name (- and _ ignored). */
+export interface Trailer {
+  file: string;
+  url: string;
+  game: string | null;
+  title: string;
+}
 
 export interface HubStatus {
   title: string;
@@ -12,6 +28,8 @@ export interface HubStatus {
   uptime: number;
   games: GameStatus[];
   links: LinkConfig[];
+  promo: PromoConfig;
+  ads: Trailer[];
 }
 
 /** What survives a hub restart: whether each game should run, and the process it runs as. */
@@ -82,7 +100,47 @@ export class Hub {
       uptime: Math.round((now - this.started) / 1000),
       games: this.games.map((g) => g.status(now)),
       links: this.config.links,
+      promo: this.config.promo,
+      ads: this.trailers(),
     };
+  }
+
+  /** Videos in assets/pv: bnb-pv.mp4 advertises the game "bnb", Space_Race_PV.mp4 the game "space-race". */
+  trailers(): Trailer[] {
+    const dir = path.join(this.assetsDir, PV_DIR);
+    let names: string[];
+    try {
+      names = fs.readdirSync(dir);
+    } catch {
+      return [];
+    }
+    const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return names
+      .filter((n) => ASSET_NAME.test(n) && VIDEO_TYPES[path.extname(n).toLowerCase()])
+      .sort()
+      .flatMap((file) => {
+        let mtime: number;
+        try {
+          const st = fs.statSync(path.join(dir, file));
+          if (!st.isFile()) return [];
+          mtime = Math.round(st.mtimeMs);
+        } catch {
+          return [];
+        }
+        const base = path.basename(file, path.extname(file));
+        // the longest matching id wins, so "bnb2-pv" goes to bnb2 rather than bnb
+        const game = this.config.games
+          .filter((g) => key(base).startsWith(key(g.id)))
+          .sort((a, b) => key(b.id).length - key(a.id).length)[0];
+        return [
+          {
+            file,
+            url: `/${ASSETS_DIR}/${PV_DIR}/${encodeURIComponent(file)}?v=${mtime}`,
+            game: game?.id ?? null,
+            title: game?.name ?? base,
+          },
+        ];
+      });
   }
 
   private load(): Saved {

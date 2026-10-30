@@ -238,6 +238,102 @@
   }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+  /* ---------------------------------------------------------------- YBOX Game Pass (a parody subscription) */
+  .ybox-logo { display: inline-grid; place-items: center; flex-shrink: 0; width: 58px; height: 58px; color: var(--text); }
+  .ybox-logo svg { width: 100%; height: 100%; overflow: visible; }
+  .ybox-logo.big { width: 104px; height: 104px; }
+  .sub-badge {
+    display: inline-flex; align-items: center; gap: 8px; margin-left: 14px; vertical-align: 0.9em; padding: 5px 9px; cursor: pointer;
+    border: 1px solid var(--text); background: var(--ink); color: var(--text); font: 700 12px/1 var(--mono); letter-spacing: 0.16em;
+  }
+  .sub-badge[hidden] { display: none; }
+  .sub-badge i { width: 7px; height: 7px; background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .sub-badge:hover { background: var(--text); color: var(--ink); }
+  .promo {
+    position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 22px;
+    margin-top: 26px; padding: 22px 20px 14px; border: 1px solid var(--line-2);
+    background:
+      repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 9px),
+      linear-gradient(120deg, rgba(255, 255, 255, 0.09), transparent 55%), var(--panel);
+  }
+  .promo[hidden] { display: none; }
+  .promo::before { content: ""; position: absolute; top: -1px; left: -1px; width: 64px; height: 2px; background: var(--text); }
+  .promo .ad { position: absolute; top: 0; right: 33px; padding: 4px 7px; background: var(--text); color: var(--ink); font: 700 11px/1 var(--mono); letter-spacing: 0.16em; }
+  .promo .x {
+    position: absolute; top: 0; right: 0; width: 33px; height: 21px; padding: 0; cursor: pointer;
+    border: 0; border-left: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); background: transparent; color: var(--muted); font: 14px/1 var(--mono);
+  }
+  .promo .x:hover { background: var(--text); color: var(--ink); }
+  .promo .name { font: 900 27px/1.1 var(--sans); letter-spacing: 0.05em; }
+  .promo .name small { margin-left: 10px; font: 700 11px/1 var(--mono); letter-spacing: 0.24em; color: var(--muted); vertical-align: 4px; }
+  .promo .slogan { margin: 8px 0 6px; font: 700 18px/1.4 var(--sans); }
+  .promo .slogan.swap { animation: flicker 0.45s 1; }
+  .promo .stats { font: 12px/1.6 var(--mono); color: var(--muted); letter-spacing: 0.04em; }
+  .promo .deal { display: inline-block; margin-left: 10px; padding: 2px 7px; border: 1px dashed var(--line-2); color: var(--text); font-weight: 700; }
+  .promo .acts { display: flex; flex-direction: column; gap: 8px; min-width: 180px; }
+  .promo .acts .btn.primary { margin-top: 0; }
+  .promo .member { display: flex; align-items: center; gap: 8px; font: 700 13px/1.4 var(--mono); letter-spacing: 0.06em; }
+  .promo .member i { width: 8px; height: 8px; background: var(--ok); box-shadow: 0 0 6px var(--ok); animation: pulse 1.8s ease-in-out infinite; }
+  .fine { grid-column: 1 / -1; margin: 6px 0 0; color: var(--dim); font: 11.5px/1.5 var(--mono); letter-spacing: 0.02em; }
+  .ybox-pop {
+    position: fixed; right: 18px; bottom: 18px; z-index: 55; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px 14px;
+    width: min(380px, calc(100vw - 36px)); padding: 20px 16px 14px; border: 1px solid var(--text); background: #070707; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
+    transform: translateY(calc(100% + 40px)); transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .ybox-pop[hidden] { display: none; }
+  .ybox-pop.show { transform: none; }
+  .ybox-pop::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: var(--hazard); }
+  .ybox-pop .ybox-logo { width: 46px; height: 46px; }
+  .ybox-pop p { margin: 0; font-weight: 700; }
+  .ybox-pop p small { display: block; color: var(--dim); font: 11px/1.4 var(--mono); letter-spacing: 0.14em; }
+  .ybox-pop .row { grid-column: 1 / -1; margin-top: 2px; }
+  .ybox-pop .row .btn.primary { margin-top: 0; }
+  .preroll {
+    position: fixed; inset: 0; z-index: 70; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 16px; padding: 22px;
+    background: radial-gradient(820px 440px at 50% 42%, rgba(255, 255, 255, 0.09), transparent 70%), #020202;
+  }
+  .preroll[hidden] { display: none; }
+  .pr-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .pr-ad { flex-shrink: 0; padding: 5px 8px; white-space: nowrap; background: var(--text); color: var(--ink); font: 700 12px/1 var(--mono); letter-spacing: 0.18em; }
+  .pr-body { display: grid; place-items: center; align-content: center; gap: 14px; text-align: center; }
+  .pr-body .ybox-logo { animation: pulse 1.6s ease-in-out infinite; }
+  .pr-name { font: 900 clamp(34px, 6.5vw, 64px)/1.08 var(--sans); letter-spacing: 0.06em; }
+  .pr-body p { margin: 0; font: 700 clamp(17px, 2.6vw, 22px)/1.5 var(--sans); color: var(--muted); }
+  .pr-foot { display: grid; gap: 8px; color: var(--dim); font: 12px/1.4 var(--mono); letter-spacing: 0.06em; }
+  .meter { height: 4px; background: var(--line); }
+  .meter i { display: block; width: 0; height: 100%; background: var(--text); transition: width 0.12s linear; }
+  .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .plan { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--line-2); background: var(--ink); }
+  .plan.best { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
+  .plan-tag { position: absolute; top: -1px; right: -1px; padding: 4px 7px; background: var(--text); color: var(--ink); font: 700 11px/1 var(--mono); letter-spacing: 0.14em; }
+  .plan b { font: 800 20px/1.2 var(--sans); letter-spacing: 0.04em; }
+  .price { font: 900 32px/1 var(--mono); }
+  .price small { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .perks { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; }
+  .perks li + li { margin-top: 4px; }
+  .plan .btn { margin-top: auto; }
+  .step { margin: 4px 0 14px; font: 700 15px/1.5 var(--mono); }
+  .step::after { content: "_"; animation: blink 0.6s steps(1) infinite; }
+  .ok-line { margin: 12px 0; font: 800 18px/1.5 var(--sans); }
+  .center { display: grid; justify-items: center; text-align: center; }
+
+  /* ---------------------------------------------------------------- game trailers (assets/pv) */
+  #pv { width: min(840px, calc(100vw - 32px)); padding: 0; overflow: hidden; }
+  #pv[open] { animation: bounce-in 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+  .pv-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .pv-head b { font: 800 19px/1.2 var(--sans); letter-spacing: 0.04em; overflow-wrap: anywhere; }
+  .pv-head .x { width: 34px; height: 30px; padding: 0; cursor: pointer; border: 1px solid var(--line-2); background: transparent; color: var(--text); font: 16px/1 var(--mono); }
+  .pv-head .x:hover { background: var(--text); color: var(--ink); }
+  .pv-video { position: relative; aspect-ratio: 16 / 9; background: #000; }
+  .pv-video video { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .pv-sound { position: absolute; right: 12px; bottom: 12px; }
+  .pv-sound .btn { background: rgba(0, 0, 0, 0.65); }
+  #pv .desc { margin: 12px 16px 0; }
+  #pv .pv-note { margin: 8px 16px 0; }
+  #pv .row { margin: 12px 16px 16px; }
+  #pv .row .btn.primary { margin-top: 0; }
+
+  @keyframes bounce-in { from { opacity: 0; transform: scale(0.82) translateY(40px); } }
   @keyframes pulse { 50% { opacity: 0.35; } }
   @keyframes blink { 50% { opacity: 0; } }
   @keyframes flicker { 0%, 2%, 6%, 43%, 47%, 100% { opacity: 1; } 3%, 44% { opacity: 0.4; } }
@@ -256,6 +352,12 @@
     95% { clip-path: inset(45% 0 30% 0); transform: translateX(3px); }
   }
 
+  @media (max-width: 760px) {
+    .promo { grid-template-columns: auto minmax(0, 1fr); }
+    .promo .acts { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+    .promo .acts .btn { flex: 1; }
+    .plans { grid-template-columns: 1fr; }
+  }
   @media (max-width: 880px) {
     :root { --thumb: 140px; }
     .top::after { font-size: 120px; }
@@ -291,10 +393,11 @@
       <span class="grow"></span>
       <span class="live" id="live"><i></i><span>LINKING…</span></span>
     </div>
-    <h1 class="glitch" id="title" data-text="更萊姆遊戲">更萊姆遊戲</h1>
+    <h1 class="glitch" id="title" data-text="更萊姆遊戲">更萊姆遊戲</h1><button class="sub-badge" id="sub-badge" type="button" title="管理 YBOX Game Pass 訂閱" hidden><i></i><span>YBOX ULTIMATE</span></button>
     <p class="summary" id="summary">&gt; 讀取中<span class="caret"></span></p>
   </header>
   <div class="banner" id="banner" role="status"><b>LINK LOST</b>連不上主控制器，顯示的是最後一次的狀態</div>
+  <section class="promo" id="promo" aria-label="廣告：YBOX Game Pass" hidden></section>
 
   <h2 class="section"><span class="idx">[01]</span><span>Games</span><span class="zh">遊戲</span><span class="rule"></span><span class="count" id="count">--</span></h2>
   <div class="list" id="games"><div class="empty">載入中…</div></div>
@@ -332,6 +435,11 @@
     <button class="btn" type="button" id="log-close">關閉</button>
   </div>
 </dialog>
+
+<dialog id="ybox"></dialog>
+<dialog id="pv" aria-label="遊戲推薦"></dialog>
+<aside class="ybox-pop" id="ybox-pop" aria-label="YBOX Game Pass" hidden></aside>
+<div class="preroll" id="preroll" role="dialog" aria-modal="true" aria-label="廣告" hidden></div>
 
 <div class="toast" id="toast"></div>
 
@@ -528,6 +636,9 @@ function render(s) {
     return el('a', { class: 'link', href: l.url, target: '_blank', rel: 'noopener' },
       el('b', null, l.name), el('span', null, l.desc || host), el('i', { 'aria-hidden': 'true' }, '↗'));
   }));
+  renderPromo(s);
+  maybeTrailer(s);
+  maybePop();
 }
 
 async function refresh(delay = 0) {
@@ -617,6 +728,390 @@ $('log-close').addEventListener('click', () => $('log').close());
 $('log').addEventListener('close', () => {
   clearInterval(logTimer);
   logGame = null;
+});
+
+// ---------------------------------------------------------------- YBOX Game Pass (a parody subscription)
+// A banner over the list, a pop-up, and now and then an "ad" before a game opens. Nothing is sold or sent
+// anywhere: subscribing only remembers a plan in this browser (a badge; Ultimate also skips the ad).
+const PLANS = [
+  { id: 'core', name: 'Core', perks: 1 },
+  { id: 'standard', name: 'Standard', perks: 2 },
+  { id: 'ultimate', name: 'Ultimate', perks: Infinity, best: true },
+];
+const NO_ADS = '看不到片頭廣告（這個是真的）';
+const PAY = ['正在向老闆請款…', '正在確認您的午休時間…', '正在套用 100% 折扣…', '付款完成：NT$0'];
+const CANCEL = [
+  ['確定要取消嗎？', '您將失去：什麼都不會失去。'],
+  ['真的要走了嗎？', '電腦玩家會很難過（不會）。'],
+  ['最後一次確認', '取消後，每月仍須支付 NT$0。'],
+];
+// a Y in a hexagon, drawn here (original art: nothing borrowed from any real console brand)
+const LOGO = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 2.5 42.5 13.2v21.6L24 45.5 5.5 34.8V13.2Z" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M14.5 13.5 24 25l9.5-11.5M24 25v11.5" fill="none" stroke="currentColor" stroke-width="4.6"/><rect x="21.6" y="22.6" width="4.8" height="4.8" style="fill:var(--ok)"/></svg>';
+const store = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: (k) => { try { localStorage.removeItem(k); } catch {} },
+};
+const today = () => new Date().toDateString();
+const yb = $('ybox');
+let promo = null;
+let sloganNo = 0;
+let payTimer = 0;
+let afterBuy = null; // runs when the subscription dialog closes (the pre-roll goes on to its game)
+let dealEnds = Date.now() + 3599_000; // "limited offer": an hour from whenever the page was opened
+// Closing the banner or the pop-up only hides it until the page is opened again: "not today" is a fake
+// on purpose (the user's call), and what comes back says you asked.
+let bannerClosed = false;
+
+function logo(big) {
+  const s = el('span', { class: big ? 'ybox-logo big' : 'ybox-logo' });
+  s.innerHTML = LOGO;
+  return s;
+}
+function myPlan() {
+  const id = store.get('ybox.plan');
+  return PLANS.find((p) => p.id === id) || null;
+}
+function perksOf(p) {
+  const list = promo.perks.slice(0, p.perks);
+  if (p.best) list.push(NO_ADS);
+  return list;
+}
+function slogan(k) {
+  const list = promo.slogans;
+  return list[((k % list.length) + list.length) % list.length].replaceAll('{games}', last ? last.games.length : '?');
+}
+function deal() {
+  if (Date.now() > dealEnds) dealEnds += 3600_000; // and it never quite ends
+  const left = Math.round((dealEnds - Date.now()) / 1000);
+  const p2 = (n) => String(n).padStart(2, '0');
+  return `限時優惠 ${p2(Math.floor(left / 3600))}:${p2(Math.floor(left / 60) % 60)}:${p2(left % 60)}`;
+}
+
+function renderPromo(s) {
+  promo = s.promo && s.promo.enabled ? s.promo : null;
+  updateBadge();
+  const box = $('promo');
+  box.hidden = !promo || bannerClosed;
+  if (box.hidden) return;
+  if (!box.firstChild) {
+    box.append(
+      el('span', { class: 'ad' }, '廣告'),
+      el('button', {
+        class: 'x', type: 'button', title: '今天不再顯示', 'aria-label': '關閉廣告',
+        onclick: () => {
+          store.set('ybox.bannerOff', today());
+          bannerClosed = true;
+          box.hidden = true;
+          toast('已設定：今天不再顯示 YBOX Game Pass 廣告');
+        },
+      }, '×'),
+      logo(),
+      el('div', null,
+        el('div', { class: 'name' }, 'YBOX Game Pass', el('small', null, 'ULTIMATE')),
+        el('p', { class: 'slogan', id: 'promo-slogan' }),
+        el('div', { class: 'stats', id: 'promo-stats' })),
+      el('div', { class: 'acts', id: 'promo-acts' }),
+      el('p', { class: 'fine', id: 'promo-fine' }));
+  }
+  const people = s.games.reduce((n, g) => n + (g.online || 0), 0);
+  $('promo-stats').replaceChildren('收錄 ', el('b', null, s.games.length), ' 款遊戲 · 目前 ', el('b', null, people), ' 位同事正在遊玩',
+    el('span', { class: 'deal', id: 'promo-deal' }, deal()));
+  $('promo-slogan').textContent = slogan(sloganNo);
+  $('promo-fine').textContent = store.get('ybox.bannerOff') === today() ? `${promo.finePrint}　✓ 您今天已選擇不再顯示` : promo.finePrint;
+  promoActions();
+}
+
+// The buttons are only rebuilt when the plan changes, so one is never swapped out mid-click.
+function promoActions(force) {
+  const acts = $('promo-acts');
+  const p = myPlan();
+  const now = p ? p.id : 'none';
+  if (!acts || (!force && acts.dataset.plan === now)) return;
+  acts.dataset.plan = now;
+  acts.replaceChildren(...(p
+    ? [el('div', { class: 'member' }, el('i'), `您是 ${p.name} 會員`), el('button', { class: 'btn', type: 'button', onclick: manage }, '管理訂閱')]
+    : [el('button', { class: 'btn primary', type: 'button', onclick: () => buy(PLANS[2]) }, el('span', null, '立即訂閱'), el('span', { class: 'arrow', 'aria-hidden': 'true' }, '→')),
+      el('button', { class: 'btn', type: 'button', onclick: plans }, '方案比較')]));
+}
+
+function updateBadge() {
+  const p = promo && myPlan();
+  $('sub-badge').hidden = !p;
+  if (p) $('sub-badge').lastChild.textContent = `YBOX ${p.name.toUpperCase()}`;
+}
+
+function sheet(wide, ...kids) {
+  clearInterval(payTimer);
+  yb.className = wide ? 'wide' : '';
+  yb.replaceChildren(...kids.filter(Boolean));
+  if (!yb.open) yb.showModal();
+}
+const closeBtn = (text) => el('button', { class: 'btn', type: 'button', onclick: () => yb.close() }, text || '關閉');
+
+function plans() {
+  if (!promo) return;
+  const cur = myPlan();
+  sheet(true,
+    el('h3', null, '> YBOX GAME PASS // 方案比較'),
+    el('div', { class: 'plans' }, PLANS.map((p) => el('div', { class: p.best ? 'plan best' : 'plan' },
+      p.best ? el('span', { class: 'plan-tag' }, '最划算') : null,
+      el('b', null, p.name),
+      el('div', { class: 'price' }, 'NT$0', el('small', null, ' / 月')),
+      el('ul', { class: 'perks' }, perksOf(p).map((t) => el('li', null, t))),
+      cur && cur.id === p.id
+        ? el('span', { class: 'btn', 'aria-disabled': 'true' }, '目前方案')
+        : el('button', { class: p.best ? 'btn primary' : 'btn', type: 'button', onclick: () => buy(p) }, cur ? '改成這個方案' : '選擇')))),
+    el('p', { class: 'fine' }, promo.finePrint),
+    el('div', { class: 'row' }, closeBtn()));
+}
+
+function buy(p) {
+  if (!promo) return;
+  const line = el('div', { class: 'step' }, PAY[0]);
+  const bar = el('i');
+  sheet(false, el('h3', null, `> 訂閱 YBOX GAME PASS ${p.name.toUpperCase()}`), line, el('div', { class: 'meter' }, bar));
+  let k = 0;
+  payTimer = setInterval(() => {
+    k++;
+    bar.style.width = `${(k / PAY.length) * 100}%`;
+    if (k < PAY.length) {
+      line.textContent = PAY[k];
+      return;
+    }
+    clearInterval(payTimer);
+    store.set('ybox.plan', p.id);
+    updateBadge();
+    promoActions(true);
+    hidePop();
+    sheet(false,
+      el('h3', null, '> 訂閱成功 // WELCOME'),
+      el('div', { class: 'center' }, logo(true), el('p', { class: 'ok-line' }, `訂閱成功！您已是 YBOX Game Pass ${p.name} 會員`)),
+      el('ul', { class: 'perks' }, perksOf(p).map((t) => el('li', null, t))),
+      el('div', { class: 'row' },
+        p.best ? null : el('button', { class: 'btn', type: 'button', onclick: () => buy(PLANS[2]) }, '升級 Ultimate 只要再加 NT$0'),
+        el('button', { class: 'btn primary', type: 'button', onclick: () => yb.close() }, '開始遊玩')));
+  }, 850);
+}
+
+function manage() {
+  const p = myPlan();
+  if (!p) return plans();
+  sheet(false,
+    el('h3', null, '> 管理訂閱 // ACCOUNT'),
+    el('div', { class: 'center' }, logo(true), el('p', { class: 'ok-line' }, `YBOX Game Pass ${p.name}`)),
+    el('ul', { class: 'perks' }, el('li', null, '下次請款：NT$0（永遠）'), el('li', null, '付款方式：老闆')),
+    el('div', { class: 'row' },
+      el('button', { class: 'btn', type: 'button', onclick: () => quit(0) }, '取消訂閱'),
+      el('button', { class: 'btn', type: 'button', onclick: plans }, '變更方案'),
+      el('button', { class: 'btn primary', type: 'button', onclick: () => yb.close() }, '繼續當會員')));
+}
+
+// Cancelling takes three "are you sure?" screens, like the real thing.
+function quit(k) {
+  if (k >= CANCEL.length) {
+    store.del('ybox.plan');
+    updateBadge();
+    promoActions(true);
+    yb.close();
+    toast('已取消訂閱。我們會想念您的 NT$0。');
+    return;
+  }
+  const [title, text] = CANCEL[k];
+  sheet(false,
+    el('h3', null, `> ${title}`),
+    el('p', { class: 'ok-line' }, text),
+    el('div', { class: 'row' },
+      el('button', { class: 'btn', type: 'button', onclick: () => quit(k + 1) }, k === CANCEL.length - 1 ? '確定取消' : '仍要取消'),
+      el('button', {
+        class: 'btn primary', type: 'button',
+        onclick: () => {
+          yb.close();
+          toast('太好了！您的 NT$0 方案繼續有效');
+        },
+      }, '保留訂閱')));
+}
+
+yb.addEventListener('close', () => {
+  clearInterval(payTimer);
+  const then = afterBuy;
+  afterBuy = null;
+  if (then) then();
+});
+$('sub-badge').addEventListener('click', manage);
+
+// One ad on screen at a time: the pop-up waits for a trailer, a dialog or the pre-roll to finish.
+const adOnScreen = () => yb.open || $('pv').open || !$('preroll').hidden;
+
+function maybePop() {
+  if (maybePop.done || !promo) return;
+  maybePop.done = true;
+  setTimeout(function show() {
+    if (!promo || myPlan()) return;
+    if (adOnScreen()) return setTimeout(show, 4000);
+    const pop = $('ybox-pop');
+    const again = store.get('ybox.popOff') === today();
+    const off = () => {
+      store.set('ybox.popOff', today());
+      hidePop();
+    };
+    pop.replaceChildren(
+      logo(),
+      el('p', null, el('small', null, again ? 'YBOX GAME PASS · 再次提醒' : 'YBOX GAME PASS'), '您的 YBOX Game Pass 試用將於 0 天後到期'),
+      el('div', { class: 'row' },
+        el('button', { class: 'btn', type: 'button', onclick: off }, '下次再說'),
+        el('button', {
+          class: 'btn primary', type: 'button',
+          onclick: () => {
+            off();
+            buy(PLANS[2]);
+          },
+        }, '立即續訂')));
+    pop.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => pop.classList.add('show')));
+  }, 7000);
+}
+function hidePop() {
+  const pop = $('ybox-pop');
+  pop.classList.remove('show');
+  setTimeout(() => {
+    if (!pop.classList.contains('show')) pop.hidden = true;
+  }, 400);
+}
+
+// Now and then 進入遊戲 first plays a short "ad" (never twice in 10 minutes; Ultimate members never).
+$('games').addEventListener('click', (e) => {
+  const a = e.target.closest('.card.playable a[href]');
+  if (!a || !promo || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const p = myPlan();
+  if (p && p.best) return;
+  if (Date.now() - Number(store.get('ybox.prerollAt') || 0) < 10 * 60_000 || Math.random() >= promo.preroll) return;
+  e.preventDefault();
+  store.set('ybox.prerollAt', String(Date.now()));
+  preroll(a.href, a.closest('.card').querySelector('h3').textContent);
+});
+
+function preroll(href, name) {
+  const box = $('preroll');
+  const LEN = 6000;
+  const start = Date.now();
+  const bar = el('i');
+  const skip = el('button', { class: 'btn', type: 'button', disabled: true }, '3 秒後可略過');
+  let timer = 0;
+  const go = () => {
+    clearInterval(timer);
+    box.hidden = true;
+    location.href = href;
+  };
+  skip.addEventListener('click', go);
+  box.replaceChildren(
+    el('div', { class: 'pr-top' }, el('span', { class: 'pr-ad' }, '廣告 · AD'), skip),
+    el('div', { class: 'pr-body' },
+      logo(true),
+      el('div', { class: 'pr-name' }, 'YBOX Game Pass'),
+      el('p', null, slogan(Math.floor(Math.random() * promo.slogans.length))),
+      el('button', {
+        class: 'btn small', type: 'button',
+        onclick: () => {
+          clearInterval(timer);
+          box.hidden = true;
+          afterBuy = () => (location.href = href);
+          buy(PLANS[2]);
+        },
+      }, '升級 Ultimate，從此看不到這段廣告')),
+    el('div', { class: 'pr-foot' }, el('span', null, `廣告結束後進入：${name}`), el('div', { class: 'meter' }, bar)));
+  box.hidden = false;
+  timer = setInterval(() => {
+    const t = Date.now() - start;
+    bar.style.width = `${Math.min(100, (t / LEN) * 100)}%`;
+    const wait = 3 - Math.floor(t / 1000);
+    if (wait > 0) skip.textContent = `${wait} 秒後可略過`;
+    else if (skip.disabled) {
+      skip.disabled = false;
+      skip.textContent = '略過廣告 ▸';
+      skip.focus();
+    }
+    if (t >= LEN) go();
+  }, 100);
+}
+
+setInterval(() => {
+  if (!promo || $('promo').hidden || !$('promo-slogan')) return;
+  sloganNo++;
+  const line = $('promo-slogan');
+  line.textContent = slogan(sloganNo);
+  line.classList.remove('swap');
+  void line.offsetWidth; // restart the flicker
+  line.classList.add('swap');
+}, 5000);
+setInterval(() => {
+  const d = $('promo-deal');
+  if (d) d.textContent = deal();
+}, 1000);
+
+// ---------------------------------------------------------------- game trailers (assets/pv)
+// Each page load pops up one of the videos in the hub's assets/pv folder, picked at random but never the
+// one this browser saw last, so every game gets its turn. 今天不再顯示 is a fake on purpose (the user's
+// call): it only closes the window, and the next one notes that you asked. Muted, because browsers only
+// autoplay without sound. A video's file name starts with its game's id.
+function maybeTrailer(s) {
+  if (maybeTrailer.done || !s.ads || !s.ads.length) return;
+  maybeTrailer.done = true;
+  const others = s.ads.filter((a) => a.file !== store.get('pv.last'));
+  const pool = others.length ? others : s.ads;
+  const ad = pool[Math.floor(Math.random() * pool.length)];
+  setTimeout(function show() {
+    if (adOnScreen()) return setTimeout(show, 3000);
+    trailer(ad);
+  }, 2500);
+}
+
+function trailer(ad) {
+  const d = $('pv');
+  store.set('pv.last', ad.file);
+  const g = last && ad.game ? last.games.find((x) => x.id === ad.game) : null;
+  const playable = g && (g.state === 'running' || g.state === 'external') && g.message === null;
+  const video = el('video', { src: ad.url, autoplay: true, loop: true, playsinline: true, preload: 'auto' });
+  video.muted = true;
+  const sound = el('button', {
+    class: 'btn small', type: 'button',
+    onclick: () => {
+      video.muted = !video.muted;
+      sound.textContent = video.muted ? '開啟聲音' : '靜音';
+      video.play().catch(() => {});
+    },
+  }, '開啟聲音');
+  const parts = [
+    el('div', { class: 'pv-head' },
+      el('span', { class: 'pr-ad' }, 'AD · 遊戲推薦'),
+      el('b', null, g ? g.name : ad.title),
+      el('span', { class: 'grow' }),
+      el('button', { class: 'x', type: 'button', 'aria-label': '關閉', onclick: () => d.close() }, '×')),
+    el('div', { class: 'pv-video' }, video, el('div', { class: 'pv-sound' }, sound)),
+    g && g.desc ? el('p', { class: 'desc' }, g.desc) : null,
+    store.get('pv.off') === today() ? el('p', { class: 'fine pv-note' }, '✓ 您今天已選擇不再顯示') : null,
+    el('div', { class: 'row' },
+      el('button', {
+        class: 'btn', type: 'button',
+        onclick: () => {
+          store.set('pv.off', today());
+          d.close();
+          toast('已設定：今天不再顯示');
+        },
+      }, '今天不再顯示'),
+      playable
+        ? el('a', { class: 'btn primary', href: gameUrl(g) }, el('span', null, '進入遊戲'), el('span', { class: 'arrow', 'aria-hidden': 'true' }, '→'))
+        : el('span', { class: 'btn primary', 'aria-disabled': 'true' }, g && g.message !== null ? '維護中，敬請期待' : '即將開放')),
+  ];
+  d.replaceChildren(...parts.filter(Boolean)); // replaceChildren() would print a null as the text "null"
+  d.showModal();
+}
+$('pv').addEventListener('close', () => {
+  const v = $('pv').querySelector('video');
+  if (!v) return;
+  v.pause();
+  v.removeAttribute('src'); // stops the download too
+  v.load();
 });
 
 if (key) {

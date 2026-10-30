@@ -4,8 +4,9 @@ rem ==========================================================================
 rem  Game Hub launcher for Windows
 rem
 rem  Double-click to run it in a window. The scheduled task made by
-rem  install-autostart.bat runs "start-hub.bat service" instead (no window).
-rem  Needs Node.js 22.18.0. Settings: hub.config.json (made on first start).
+rem  install-autostart.bat runs "node dist\service.js" instead (no window);
+rem  an older task that still runs "start-hub.bat service" gets the same.
+rem  Needs Node.js 24. Settings: hub.config.json (made on first start).
 rem  Colleagues open  http://<this PC's IP>:4300  (the port is in the config).
 rem
 rem  Plain ASCII on purpose: it runs the same whatever encoding an editor
@@ -32,6 +33,7 @@ set "NODE_VERSION="
 for /f "delims=" %%v in ('node -v 2^>nul') do set "NODE_VERSION=%%v"
 call :log "node version %NODE_VERSION%"
 if not exist "dist\hub.js" goto no_dist
+if /i "%MODE%"=="service" goto service
 
 :run
 echo.
@@ -50,17 +52,21 @@ goto run
 
 :port_busy
 echo [ERROR] The hub port is already in use. Is the hub already running? See logs\hub.log
-goto wait_or_stop
+goto done
 
 :bad_config
 echo [ERROR] hub.config.json has a mistake. See logs\hub.log, fix the file, and start again.
-goto wait_or_stop
+goto done
 
-:wait_or_stop
-rem The startup task keeps trying, so a fix (or a free port) is picked up by itself.
-if /i not "%MODE%"=="service" goto done
-ping -n 31 127.0.0.1 >nul
-goto run
+:service
+rem No restart loop here: after a Ctrl+C (a Node.js update sends one) a batch loop waits at
+rem "Terminate batch job (Y/N)?" with nobody to answer. dist\service.js restarts the hub itself
+rem and ignores Ctrl+C. Re-run install-autostart.bat to drop this batch from the task altogether.
+if not exist "dist\service.js" goto no_dist
+call :log "starting service"
+call node dist\service.js
+call :log "service exited with code %ERRORLEVEL%"
+goto done
 
 :log
 >>"%LOG%" echo [%date% %time%] %~1
@@ -72,7 +78,7 @@ goto done
 
 :no_node
 call :log "error: node not found"
-echo [ERROR] Node.js was not found. Install Node.js 22.18.0 from https://nodejs.org/
+echo [ERROR] Node.js was not found. Install Node.js 24 from https://nodejs.org/
 echo         then close this window and run this file again.
 goto done
 

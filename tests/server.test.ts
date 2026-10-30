@@ -5,12 +5,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { validateConfig } from '../src/config';
+import { DEFAULT_PROMO, validateConfig } from '../src/config';
 import { Hub, type HubStatus } from '../src/hub';
 import { createServer } from '../src/server';
 
 const PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const PICTURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+const VIDEO = Buffer.from(Array.from({ length: 100 }, (_, k) => k));
 let base = '';
 let server: http.Server;
 let url = '';
@@ -22,6 +23,11 @@ beforeAll(async () => {
   fs.mkdirSync(path.join(base, 'assets'));
   fs.writeFileSync(path.join(base, 'assets', 'g.png'), PICTURE);
   fs.writeFileSync(path.join(base, 'assets', 'notes.txt'), 'not a picture');
+  fs.mkdirSync(path.join(base, 'assets', 'pv'));
+  fs.writeFileSync(path.join(base, 'assets', 'pv', 'g-pv.mp4'), VIDEO);
+  fs.writeFileSync(path.join(base, 'assets', 'pv', 'Space-Race_PV_30s.mp4'), VIDEO);
+  fs.writeFileSync(path.join(base, 'assets', 'pv', 'teaser.webm'), VIDEO);
+  fs.writeFileSync(path.join(base, 'assets', 'pv', 'notes.txt'), 'not a video');
   fs.writeFileSync(path.join(base, 'hub-state.json'), '{"games":{}}');
   const cfg = validateConfig({
     title: '測試入口',
@@ -30,6 +36,7 @@ beforeAll(async () => {
       // a command that is never run: autoStart is off and the tests never start it
       { id: 'g', name: '遊戲', dir: path.join(base, 'Game'), command: 'node', args: ['missing.js'], port: 1, autoStart: false, image: 'g.png' },
       { id: 'h', name: '沒圖的遊戲', port: 2, image: 'missing.png' },
+      { id: 'space_race', name: '太空競速', port: 3 },
     ],
     links: [{ name: '說明', url: 'https://example.com' }],
   });
@@ -77,6 +84,41 @@ describe('portal server', () => {
     expect(Buffer.from(await res.arrayBuffer())).toEqual(PICTURE);
     for (const bad of ['/assets/notes.txt', '/assets/missing.png', '/assets/..%2Fhub-state.json', '/assets/%E0%A4%A', '/assets/']) {
       expect((await fetch(url + bad)).status, bad).toBe(404);
+    }
+  });
+
+  it('lists the trailers in assets/pv with their games, and streams them in ranges', async () => {
+    const status = (await (await fetch(`${url}/api/status`)).json()) as HubStatus;
+    // letter case, - and _ do not matter when a file name is matched to a game id
+    expect(status.ads).toEqual([
+      { file: 'Space-Race_PV_30s.mp4', url: expect.stringMatching(/^\/assets\/pv\/Space-Race_PV_30s\.mp4\?v=\d+$/), game: 'space_race', title: '太空競速' },
+      { file: 'g-pv.mp4', url: expect.stringMatching(/^\/assets\/pv\/g-pv\.mp4\?v=\d+$/), game: 'g', title: '遊戲' },
+      { file: 'teaser.webm', url: expect.stringMatching(/^\/assets\/pv\/teaser\.webm\?v=\d+$/), game: null, title: 'teaser' },
+    ]);
+    const whole = await fetch(url + status.ads[1]!.url);
+    expect(whole.status).toBe(200);
+    expect(whole.headers.get('content-type')).toBe('video/mp4');
+    expect(whole.headers.get('accept-ranges')).toBe('bytes');
+    expect(Buffer.from(await whole.arrayBuffer())).toEqual(VIDEO);
+    const part = await fetch(url + status.ads[1]!.url, { headers: { range: 'bytes=10-19' } });
+    expect(part.status).toBe(206);
+    expect(part.headers.get('content-range')).toBe('bytes 10-19/100');
+    expect(Buffer.from(await part.arrayBuffer())).toEqual(VIDEO.subarray(10, 20));
+    const tail = await fetch(`${url}/assets/pv/g-pv.mp4`, { headers: { range: 'bytes=-5' } });
+    expect(Buffer.from(await tail.arrayBuffer())).toEqual(VIDEO.subarray(95));
+    expect((await fetch(`${url}/assets/pv/g-pv.mp4`, { headers: { range: 'bytes=500-' } })).status).toBe(416);
+    for (const bad of ['/assets/pv/notes.txt', '/assets/pv/missing.mp4', '/assets/pv/..%2F..%2Fhub-state.json', '/assets/pv/']) {
+      expect((await fetch(url + bad)).status, bad).toBe(404);
+    }
+  });
+
+  it('sends the YBOX Game Pass copy, built in unless the config changes it', async () => {
+    const status = (await (await fetch(`${url}/api/status`)).json()) as HubStatus;
+    expect(status.promo).toEqual(DEFAULT_PROMO);
+    const own = validateConfig({ adminPassword: 'abcd', games: [], promo: { enabled: false, preroll: 0.5 } }).promo;
+    expect(own).toEqual({ ...DEFAULT_PROMO, enabled: false, preroll: 0.5 });
+    for (const promo of [{ preroll: 2 }, { slogans: [] }, { perks: ['ok', 3] }, { enabled: 'yes' }, 'on']) {
+      expect(() => validateConfig({ adminPassword: 'abcd', games: [], promo }), JSON.stringify(promo)).toThrow(/promo/);
     }
   });
 

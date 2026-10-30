@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { ASSET_NAME, ASSETS_DIR, IMAGE_TYPES } from './config';
+import { ASSET_NAME, ASSETS_DIR, IMAGE_TYPES, PV_DIR, VIDEO_TYPES } from './config';
 import { HUB_VERSION, type Hub } from './hub';
 
 const FAIL_LIMIT = 8; // wrong passwords allowed per address per window
@@ -35,8 +35,54 @@ function readFile(file: string): Buffer | null {
 }
 
 /**
+ * A video, streamed rather than read whole, and in ranges: browsers ask for byte ranges to start playing
+ * before the rest has arrived (Safari plays nothing without them).
+ */
+function sendVideo(req: http.IncomingMessage, res: http.ServerResponse, file: string, type: string, immutable: boolean): void {
+  let size: number;
+  try {
+    const st = fs.statSync(file);
+    if (!st.isFile()) return notFound(res);
+    size = st.size;
+  } catch {
+    return notFound(res);
+  }
+  const headers = {
+    'content-type': type,
+    'accept-ranges': 'bytes',
+    'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',
+    'x-content-type-options': 'nosniff',
+  };
+  let start = 0;
+  let end = size - 1;
+  const range = req.headers.range;
+  if (range) {
+    const m = /^bytes=(\d*)-(\d*)$/.exec(range);
+    if (m && m[1]) {
+      start = Number(m[1]);
+      if (m[2]) end = Math.min(Number(m[2]), size - 1);
+    } else if (m && m[2]) {
+      start = Math.max(0, size - Number(m[2])); // the last N bytes
+    } else {
+      start = NaN;
+    }
+    if (!(start <= end)) {
+      res.writeHead(416, { 'content-range': `bytes */${size}` });
+      res.end();
+      return;
+    }
+    res.writeHead(206, { ...headers, 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1 });
+  } else {
+    res.writeHead(200, { ...headers, 'content-length': size });
+  }
+  fs.createReadStream(file, { start, end })
+    .on('error', () => res.destroy())
+    .pipe(res);
+}
+
+/**
  * Portal page and API on one port:
- * - GET /, /assets/<picture>, /api/status, /healthz: open to everyone
+ * - GET /, /assets/<picture>, /assets/pv/<video>, /api/status, /healthz: open to everyone
  * - POST /api/login, POST /api/games/<id>/start|stop|restart|takeover, GET /api/games/<id>/log:
  *   need the admin password in the `x-hub-key` header
  */
@@ -61,6 +107,12 @@ export function createServer(hub: Hub, publicDir: string): http.Server {
         name = decodeURIComponent(p.slice(ASSETS_DIR.length + 2));
       } catch {
         /* malformed escape: not found */
+      }
+      if (name.startsWith(`${PV_DIR}/`)) {
+        const video = name.slice(PV_DIR.length + 1);
+        const vtype = VIDEO_TYPES[path.extname(video).toLowerCase()];
+        if (!ASSET_NAME.test(video) || !vtype) return notFound(res);
+        return sendVideo(req, res, path.join(hub.assetsDir, PV_DIR, video), vtype, url.searchParams.has('v'));
       }
       const type = IMAGE_TYPES[path.extname(name).toLowerCase()];
       const body = ASSET_NAME.test(name) && type ? readFile(path.join(hub.assetsDir, name)) : null;

@@ -1,15 +1,16 @@
-// Bundles the hub into one file (dist/hub.js, no runtime dependencies) and copies the portal page.
+// Bundles the hub (dist/hub.js) and the service that keeps it running (dist/service.js), with no runtime
+// dependencies, and copies the portal page.
 import { build } from 'esbuild';
 import { cpSync, rmSync, writeFileSync } from 'node:fs';
 
 rmSync('dist', { recursive: true, force: true });
 await build({
-  entryPoints: ['src/index.ts'],
+  entryPoints: { hub: 'src/index.ts', service: 'src/service.ts' },
   bundle: true,
   platform: 'node',
   format: 'esm',
-  target: 'node22',
-  outfile: 'dist/hub.js',
+  target: 'node24',
+  outdir: 'dist',
   sourcemap: true,
   logLevel: 'info',
 });

@@ -7,13 +7,15 @@
 - 管理模式（密碼）：啟動、停止、重啟、接管手動開的視窗、看各遊戲的紀錄
 - 維護：在遊戲資料夾放 `maintenance.txt`（內容就是公告）；有局在打會等打完才關，刪掉檔案就自動開回來
 - 遊戲以獨立行程執行、輸出寫到 `logs/<id>.log`：主控制器重開不會中斷遊戲，起來後自動接回
-- Windows 開機自動啟動：`install-autostart.bat` 建立以 SYSTEM 執行的排程工作
+- 惡搞訂閱廣告「YBOX Game Pass」：列表上方橫幅、右下角「試用到期」小視窗、偶爾在進入遊戲前播的片頭廣告，加上方案比較、假結帳與三段取消挽留（只存在瀏覽器，不收任何資料；文案可在 `hub.config.json` 的 `promo` 改）
+- 遊戲宣傳影片：放進 `assets/pv/` 的影片（檔名以遊戲 id 開頭）會以彈跳視窗播放
+- Windows 開機自動啟動：`install-autostart.bat` 建立排程工作「Game Hub」，以安裝者自己的帳號（S4U，不存密碼）執行背景服務 `dist/service.js`；主控制器停了 5 秒內重開（Node.js 更新時也一樣）
 
 不需要 npm install：打包後只有一個 `dist/hub.js`（只用 Node.js 內建模組）加入口網頁。
 
 ## 環境
 
-Node.js 22.18.0（與測試機相同，`nvm use` 會讀 `.nvmrc`）。
+Node.js 24（與測試機相同，`.nvmrc` 記著確切版本，`nvm use` 會讀它）。
 
 ```bash
 npm install

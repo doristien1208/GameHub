@@ -18,11 +18,11 @@ if (existsSync('assets')) cpSync('assets', `${out}/assets`, { recursive: true, f
 cpSync('hub.config.example.json', `${out}/hub.config.example.json`);
 
 const crlf = (s) => s.replace(/\r?\n/g, '\r\n');
-for (const bat of ['start-hub.bat', 'open-firewall.bat', 'install-autostart.bat', 'remove-autostart.bat']) {
-  const text = readFileSync(`deploy/${bat}`, 'utf8');
-  // Non-ASCII text in .bat files breaks depending on the PC's code page and the editor's encoding.
-  if (/[^\x00-\x7f]/.test(text)) throw new Error(`${bat} must stay plain ASCII`);
-  writeFileSync(`${out}/${bat}`, crlf(text));
+for (const script of ['start-hub.bat', 'open-firewall.bat', 'install-autostart.bat', 'remove-autostart.bat', 'autostart.ps1']) {
+  const text = readFileSync(`deploy/${script}`, 'utf8');
+  // Non-ASCII text in .bat / .ps1 files breaks depending on the PC's code page and the editor's encoding.
+  if (/[^\x00-\x7f]/.test(text)) throw new Error(`${script} must stay plain ASCII`);
+  writeFileSync(`${out}/${script}`, crlf(text));
 }
 writeFileSync(`${out}/README-DEPLOY.txt`, '﻿' + crlf(readFileSync('deploy/README-DEPLOY.txt', 'utf8')));
 
